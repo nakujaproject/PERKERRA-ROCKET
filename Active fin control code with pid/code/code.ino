@@ -2,6 +2,11 @@
 #include <ESP32Servo.h>
 #include "FastLED.h"
 #define ANGLE 90
+#include <SPI.h>
+#include <SD.h>
+
+const int chipSelect = 5;
+File myFile;
 
 #define DATA_PIN    14
 
@@ -39,6 +44,18 @@ void setup() {
   MPUSetup();
   MOTORSetup();
 
+  SPIClass spiSD = SPIClass(HSPI); // Neither HSPI nor VSPI seem to work
+  spiSD.begin(13, 15, 4, 5);
+
+  Serial.print("Initializing SD card...");
+
+  if (!SD.begin(chipSelect, spiSD)) {
+    Serial.println("initialization failed!");
+    while (1);
+  }
+  Serial.println("initialization done.");
+
+
   FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS)
     .setCorrection(TypicalLEDStrip)
     .setDither(BRIGHTNESS < 255);
@@ -70,6 +87,18 @@ void loop() {
 
    angleX = constrain(angleX, 0, 180);
    angleY = constrain(angleY, 0, 180);
+
+   myFile = SD.open("/test.txt", FILE_WRITE);
+
+  if (myFile) {
+    myFile.print("error: ");
+    myFile.print(error);
+    myFile.print" ,anglex: ");
+    myFile.print(angleX);
+    myFile.print(" ,angley: ");
+    myFile.println(angleY);
+  }
+  myFile.close();
 
 
    MotorWrite(angleX, angleY);
