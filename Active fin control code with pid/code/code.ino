@@ -1,6 +1,16 @@
 #include <Wire.h>
 #include <ESP32Servo.h>
+#include "FastLED.h"
 #define ANGLE 90
+
+#define DATA_PIN    14
+
+#define LED_TYPE    WS2812
+#define COLOR_ORDER GRB
+#define NUM_LEDS    2
+#define BRIGHTNESS  255
+
+CRGB leds[NUM_LEDS];
 
 double x, y, z;
 int angleX, angleY;
@@ -28,12 +38,26 @@ void setup() {
   Serial.begin(9600);
   MPUSetup();
   MOTORSetup();
+
+  FastLED.addLeds<LED_TYPE,DATA_PIN,COLOR_ORDER>(leds, NUM_LEDS)
+    .setCorrection(TypicalLEDStrip)
+    .setDither(BRIGHTNESS < 255);
+
+  // set master brightness control
+  FastLED.setBrightness(BRIGHTNESS);
 }
 
 void loop() {
   currentTime = millis();
   elaspedTime = currentTime - previousTime;
   getAngle(x, y, z);  //update yaw, pitch and roll
+  if (z < 0){
+    leds[0] = CRGB::Red;
+    FastLED.show();
+  }else{
+    leds[0] = CRGB::Green;
+    FastLED.show();
+  }
   error = setPoint - z;
   rateError = (error - lastError) / elaspedTime;
   cumError += error * elaspedTime;
@@ -75,9 +99,3 @@ void loop() {
 
    previousTime = currentTime;
 }
-
-
-
-
-
-
